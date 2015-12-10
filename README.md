@@ -47,6 +47,8 @@ inquirer.prompt([{
 });
 ```
 
+![Demo](/demo.gif?raw=true "Demo")
+
 See also [example.js](https://github.com/nicksrandall/inquierer-directory/blob/master/example.js) for a working example
 
 ## License
