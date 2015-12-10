@@ -1,6 +1,6 @@
 {
   "name": "inquirer-directory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a directory (relative to given path) selector for Inquirer.js",
   "main": "index.js",
   "scripts": {
