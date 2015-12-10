@@ -15,7 +15,7 @@ describe('inquirer-directory', function() {
       'folder1': {
         'folder1-1': {}
       },
-      'folder2': {},
+      'zfolder2': {},
       'some.png': new Buffer([8, 6, 7, 5, 3, 0, 9]),
     });
   });
@@ -43,7 +43,7 @@ describe('inquirer-directory', function() {
   it('should list only folders an not files', function () {
       prompt.run();
       expect(rl.output.__raw__).to.contain('folder1');
-      expect(rl.output.__raw__).to.contain('folder2');
+      expect(rl.output.__raw__).to.contain('zfolder2');
   });
 
   it('should not contain folders starting with "." (private folders)', function () {
@@ -75,7 +75,7 @@ describe('inquirer-directory', function() {
       moveDown();
       moveDown();
       enter();
-      expect(rl.output.__raw__).to.contain('folder2');
+      expect(rl.output.__raw__).to.contain('zfolder2');
   });
 
   it('should not allow users to go back past basePath', function (done) {
@@ -88,16 +88,19 @@ describe('inquirer-directory', function() {
       enter();
   });
 
-  function typeNonChar() {
-    rl.emit('keypress', '', {
-      name: 'shift'
-    });
-  }
+  // it('should allow users to press keys to shortcut to that value', function (done) {
+  //     prompt.run(function (answer) {
+  //       expect(answer).to.equal('zfolder2');
+  //       done();
+  //     });
+  //     keyPress('z');
+  //     enter();
+  //     enter();
+  // });
 
-  function type(word) {
-    word.split('').forEach(function(char) {
-      rl.line = rl.line + char;
-      rl.emit('keypress', char)
+  function keyPress(letter) {
+    rl.emit('keypress', letter, {
+      name: letter,
     });
   }
 

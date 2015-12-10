@@ -64,15 +64,26 @@ util.inherits( Prompt, Base );
 
 Prompt.prototype._run = function( cb ) {
   this.done = cb;
-
+  var alphaNumericRegex = /\w/i;
   var events = observe(this.rl);
 
+  var keyUps = events.keypress.filter(function (e) {
+    return e.key.name === 'up';
+  }).share();
+
+  var keyDowns = events.keypress.filter(function (e) {
+    return e.key.name === 'down';
+  }).share();
+  var alphaNumeric = events.keypress.filter(function (e) {
+    return alphaNumericRegex.test(e.value);
+  }).share();
 
   var outcome = this.handleSubmit(events.line);
   outcome.drill.forEach( this.handleDrill.bind(this) );
   outcome.back.forEach( this.handleBack.bind(this) );
-  events.normalizedUpKey.takeUntil( outcome.done ).forEach( this.onUpKey.bind(this) );
-  events.normalizedDownKey.takeUntil( outcome.done ).forEach( this.onDownKey.bind(this) );
+  keyUps.takeUntil( outcome.done ).forEach( this.onUpKey.bind(this) );
+  keyDowns.takeUntil( outcome.done ).forEach( this.onDownKey.bind(this) );
+  alphaNumeric.takeUntil( outcome.done ).forEach( this.onKeyPress.bind(this) );
   outcome.done.forEach( this.onSubmit.bind(this) );
 
   // Init the prompt
@@ -96,12 +107,12 @@ Prompt.prototype.render = function() {
     message += chalk.dim( "(Use arrow keys)" );
   }
 
-  message += chalk.bold("\n Current directory: ") + this.currentPath;
 
   // Render choices or answer depending on the state
   if ( this.status === "answered" ) {
-    message += chalk.cyan( this.opt.choices.getChoice(this.selected).short );
+    message += chalk.cyan( path.relative(this.opt.basePath, this.currentPath) );
   } else {
+    message += chalk.bold("\n Current directory: ") + this.currentPath;
     var choicesStr = listRender(this.opt.choices, this.selected );
     message += "\n" + this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
   }
@@ -194,6 +205,24 @@ Prompt.prototype.onDownKey = function() {
   this.render();
 };
 
+Prompt.prototype.onKeyPress = function(e) {
+  var index = findIndex.call(this, e.value);
+  if (index >= 0) {
+    this.selected = index;
+  }
+  this.render();
+};
+
+function findIndex (letter) {
+  var item;
+  for (var i=0; i < this.opt.choices.realLength; i++) {
+    item = this.opt.choices.realChoices[i].name.toLowerCase();
+    if (item[0] === letter) {
+      return i;
+    }
+  }
+  return -1;
+}
 
 /**
  * Helper to create new choices based on previous selection.
