@@ -4,7 +4,9 @@
   "description": "a directory (relative to given path) selector for Inquirer.js",
   "main": "index.js",
   "scripts": {
-    "test": "node_modules/.bin/_mocha test/spec"
+    "test": "node_modules/.bin/_mocha test/spec",
+    "preversion": "npm test",
+    "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",
