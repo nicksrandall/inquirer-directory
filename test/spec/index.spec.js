@@ -20,6 +20,8 @@ describe('inquirer-directory', function() {
     });
   });
 
+  after(mock.restore);
+
   beforeEach(function() {
     rl = new ReadlineStub();
     prompt = new Prompt({
