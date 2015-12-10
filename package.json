@@ -1,0 +1,39 @@
+{
+  "name": "inquirer-directory",
+  "version": "1.0.0",
+  "description": "a directory (relative to given path) selector for Inquirer.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "node_modules/.bin/_mocha test/spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicksrandall/inquierer-directory.git"
+  },
+  "keywords": [
+    "Inquirer",
+    "directory",
+    "prompt"
+  ],
+  "author": "Nick Randall <nicksrandall@gmail.com> (http://nickrandall.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nicksrandall/inquierer-directory/issues"
+  },
+  "homepage": "https://github.com/nicksrandall/inquierer-directory#readme",
+  "dependencies": {
+    "chalk": "^1.1.1",
+    "cli-cursor": "^1.0.2",
+    "figures": "^1.4.0",
+    "lodash": "^3.10.1",
+    "util": "^0.10.3"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "events": "^1.1.0",
+    "inquirer": "^0.11.0",
+    "mocha": "^2.3.4",
+    "mock-fs": "^3.5.0",
+    "sinon": "^1.17.2"
+  }
+}
