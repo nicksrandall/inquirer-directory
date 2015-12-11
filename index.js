@@ -25,8 +25,8 @@ module.exports = Prompt;
 /**
  * Constants
  */
-var CHOOSE = "choose current directory";
-var BACK = "go back";
+var CHOOSE = "choose this directory";
+var BACK = "go back a directory";
 
 /**
  * Constructor
@@ -40,13 +40,11 @@ function Prompt() {
   }
 
   this.depth = 0;
-  this.currentPath = path.join(process.cwd(), this.opt.basePath);
+  this.currentPath = path.isAbsolute(this.opt.basePath) ? path.resolve(this.opt.basePath) : path.join(process.cwd(), this.opt.basePath);
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
   this.selected = 0;
 
   this.firstRender = true;
-
-  var def = this.opt.default;
 
   // Make sure no default is set (so it won't be printed)
   this.opt.default = null;
@@ -112,7 +110,7 @@ Prompt.prototype.render = function() {
   if ( this.status === "answered" ) {
     message += chalk.cyan( path.relative(this.opt.basePath, this.currentPath) );
   } else {
-    message += chalk.bold("\n Current directory: ") + this.currentPath;
+    message += chalk.bold("\n Current directory: ") + this.opt.basePath + "/" + chalk.cyan(path.relative(this.opt.basePath, this.currentPath));
     var choicesStr = listRender(this.opt.choices, this.selected );
     message += "\n" + this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
   }
@@ -236,6 +234,7 @@ Prompt.prototype.createChoices = function (basePath) {
   if (this.depth > 0) {
     choices.push(new Separator());
     choices.push(BACK);
+    choices.push(new Separator());
   }
   return choices;
 };
