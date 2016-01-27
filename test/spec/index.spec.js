@@ -17,6 +17,9 @@ describe('inquirer-directory', function() {
       },
       'zfolder2': {},
       'some.png': new Buffer([8, 6, 7, 5, 3, 0, 9]),
+      'a-symlink': mock.symlink({
+        path: 'folder1'
+      })
     });
   });
 
