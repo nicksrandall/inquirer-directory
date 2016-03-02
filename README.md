@@ -10,6 +10,15 @@ Relative Directory prompt for [inquirer](https://github.com/SBoudrias/Inquirer.j
 npm install --save inquirer-directory
 ```
 
+## Features
+- Support for symlinked files
+- Vim style navigation
+- Search for file with "/" key
+
+### Key Maps
+- Press "/" key to enter search mode.
+- Press "-" key to go up (back) a directory.
+
 ## Usage
 
 

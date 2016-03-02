@@ -29,6 +29,7 @@
     "figures": "^1.4.0",
     "inquirer": "^0.11.0",
     "lodash": "^3.10.1",
+    "rx-lite": "^4.0.8",
     "util": "^0.10.3"
   },
   "devDependencies": {
