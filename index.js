@@ -70,11 +70,11 @@ Prompt.prototype._run = function( cb ) {
   var events = observe(this.rl);
 
   var keyUps = events.keypress.filter(function (e) {
-    return !self.searchMode && (e.key.name === 'up' || e.key.name === 'k');
+    return e.key.name === 'up' || (!self.searchMode && e.key.name === 'k');
   }).share();
 
   var keyDowns = events.keypress.filter(function (e) {
-    return !self.searchMode && (e.key.name === 'down' || e.key.name === 'j');
+    return e.key.name === 'down' || (!self.searchMode && e.key.name === 'j');
   }).share();
 
   var keySlash = events.keypress.filter(function (e) {
