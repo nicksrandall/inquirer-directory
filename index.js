@@ -108,7 +108,6 @@ Prompt.prototype._run = function( cb ) {
     })
     .takeUntil(done$)
     .doOnCompleted(function() {
-      console.log('COMPLETED');
       self.searchMode = false;
       self.render();
       return false;
@@ -121,7 +120,7 @@ Prompt.prototype._run = function( cb ) {
   keyUps.takeUntil( outcome.done ).forEach( this.onUpKey.bind(this) );
   keyDowns.takeUntil( outcome.done ).forEach( this.onDownKey.bind(this) );
   keyMinus.takeUntil( outcome.done ).forEach( this.handleBack.bind(this) );
-  alphaNumeric.takeUntil( outcome.done ).forEach( this.hideKeyPress.bind(this) );
+  events.keypress.takeUntil( outcome.done ).forEach( this.hideKeyPress.bind(this) );
   searchTerm.takeUntil( outcome.done ).forEach( this.onKeyPress.bind(this) );
   outcome.done.forEach( this.onSubmit.bind(this) );
 
@@ -157,6 +156,8 @@ Prompt.prototype.render = function() {
   }
   if (this.searchMode) {
     message += ("\nSearch: " + this.searchTerm);
+  } else {
+    message += "\n(Use \"/\" key to search this directory)";
   }
 
   this.firstRender = false;
