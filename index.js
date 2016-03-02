@@ -10,7 +10,6 @@ var cliCursor = require("cli-cursor");
 var Base = require("inquirer/lib/prompts/base");
 var observe = require("inquirer/lib/utils/events");
 var Paginator = require("inquirer/lib/utils/paginator");
-var BottomBar = require("inquirer/lib/ui/bottom-bar");
 var Choices = require('inquirer/lib/objects/choices');
 var Separator = require('inquirer/lib/objects/separator');
 
@@ -50,7 +49,6 @@ function Prompt() {
   // Make sure no default is set (so it won't be printed)
   this.opt.default = null;
 
-  this.ui = new BottomBar();
   this.searchTerm = '';
 
   this.paginator = new Paginator();
@@ -81,6 +79,10 @@ Prompt.prototype._run = function( cb ) {
 
   var keySlash = events.keypress.filter(function (e) {
     return e.value === '/';
+  }).share();
+
+  var keyMinus = events.keypress.filter(function (e) {
+    return e.value === '-';
   }).share();
 
   var alphaNumeric = events.keypress.filter(function (e) {
@@ -118,6 +120,8 @@ Prompt.prototype._run = function( cb ) {
   outcome.back.forEach( this.handleBack.bind(this) );
   keyUps.takeUntil( outcome.done ).forEach( this.onUpKey.bind(this) );
   keyDowns.takeUntil( outcome.done ).forEach( this.onDownKey.bind(this) );
+  keyMinus.takeUntil( outcome.done ).forEach( this.handleBack.bind(this) );
+  alphaNumeric.takeUntil( outcome.done ).forEach( this.hideKeyPress.bind(this) );
   searchTerm.takeUntil( outcome.done ).forEach( this.onKeyPress.bind(this) );
   outcome.done.forEach( this.onSubmit.bind(this) );
 
@@ -151,11 +155,13 @@ Prompt.prototype.render = function() {
     var choicesStr = listRender(this.opt.choices, this.selected );
     message += "\n" + this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
   }
+  if (this.searchMode) {
+    message += ("\nSearch: " + this.searchTerm);
+  }
 
   this.firstRender = false;
 
   this.screen.render(message);
-  this.ui.write(this.searchMode ? '\nSearch: ' + this.searchTerm : '');
 };
 
 
@@ -203,12 +209,14 @@ Prompt.prototype.handleDrill = function () {
  * when user selects ".. back"
  */
 Prompt.prototype.handleBack = function () {
-  var choice = this.opt.choices.getChoice( this.selected );
-  this.depth--;
-  this.currentPath = path.dirname(this.currentPath);
-  this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
-  this.selected = 0;
-  this.render();
+  if (this.depth > 0) {
+    var choice = this.opt.choices.getChoice( this.selected );
+    this.depth--;
+    this.currentPath = path.dirname(this.currentPath);
+    this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
+    this.selected = 0;
+    this.render();
+  }
 };
 
 /**
@@ -229,6 +237,12 @@ Prompt.prototype.onSubmit = function(value) {
 /**
  * When user press a key
  */
+Prompt.prototype.hideKeyPress = function() {
+  if (!this.searchMode) {
+    this.render();
+  }
+};
+
 Prompt.prototype.onUpKey = function() {
   var len = this.opt.choices.realLength;
   this.selected = (this.selected > 0) ? this.selected - 1 : len - 1;

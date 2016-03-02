@@ -11,9 +11,13 @@ npm install --save inquirer-directory
 ```
 
 ## Features
-- Support for hidden and symlinked files
+- Support for symlinked files
 - Vim style navigation
 - Search for file with "/" key
+
+### Key Maps
+- Press "/" key to enter search mode.
+- Press "-" key to go up (back) a directory.
 
 ## Usage
 
