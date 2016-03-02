@@ -10,6 +10,11 @@ Relative Directory prompt for [inquirer](https://github.com/SBoudrias/Inquirer.j
 npm install --save inquirer-directory
 ```
 
+## Features
+- Support for hidden and symlinked files
+- Vim style navigation
+- Search for file with "/" key
+
 ## Usage
 
 

@@ -1,7 +1,7 @@
 /**
  * `directory` type prompt
  */
-
+var rx = require('rx-lite');
 var _ = require("lodash");
 var util = require("util");
 var chalk = require("chalk");
@@ -10,6 +10,7 @@ var cliCursor = require("cli-cursor");
 var Base = require("inquirer/lib/prompts/base");
 var observe = require("inquirer/lib/utils/events");
 var Paginator = require("inquirer/lib/utils/paginator");
+var BottomBar = require("inquirer/lib/ui/bottom-bar");
 var Choices = require('inquirer/lib/objects/choices');
 var Separator = require('inquirer/lib/objects/separator');
 
@@ -49,6 +50,9 @@ function Prompt() {
   // Make sure no default is set (so it won't be printed)
   this.opt.default = null;
 
+  this.ui = new BottomBar();
+  this.searchTerm = '';
+
   this.paginator = new Paginator();
 }
 util.inherits( Prompt, Base );
@@ -61,19 +65,52 @@ util.inherits( Prompt, Base );
  */
 
 Prompt.prototype._run = function( cb ) {
+  var self = this;
+  self.searchMode = false;
   this.done = cb;
-  var alphaNumericRegex = /\w/i;
+  var alphaNumericRegex = /\w|\.|\-/i;
   var events = observe(this.rl);
 
   var keyUps = events.keypress.filter(function (e) {
-    return e.key.name === 'up';
+    return !self.searchMode && (e.key.name === 'up' || e.key.name === 'k');
   }).share();
 
   var keyDowns = events.keypress.filter(function (e) {
-    return e.key.name === 'down';
+    return !self.searchMode && (e.key.name === 'down' || e.key.name === 'j');
   }).share();
+
+  var keySlash = events.keypress.filter(function (e) {
+    return e.value === '/';
+  }).share();
+
   var alphaNumeric = events.keypress.filter(function (e) {
-    return alphaNumericRegex.test(e.value);
+    return e.key.name === 'backspace' || alphaNumericRegex.test(e.value);
+  }).share();
+
+  var searchTerm = keySlash.flatMap(function (md) {
+    self.searchMode = true;
+    self.searchTerm = '';
+    self.render();
+    var end$ = new rx.Subject();
+    var done$ = rx.Observable.merge(events.line, end$);
+    return alphaNumeric.map(function (e) {
+      if (e.key.name === 'backspace' && self.searchTerm.length) {
+        self.searchTerm = self.searchTerm.slice(0, -1);
+      } else if (e.value) {
+        self.searchTerm += e.value;
+      }
+      if (self.searchTerm === '') {
+        end$.onNext(true);
+      }
+      return self.searchTerm;
+    })
+    .takeUntil(done$)
+    .doOnCompleted(function() {
+      console.log('COMPLETED');
+      self.searchMode = false;
+      self.render();
+      return false;
+    });
   }).share();
 
   var outcome = this.handleSubmit(events.line);
@@ -81,7 +118,7 @@ Prompt.prototype._run = function( cb ) {
   outcome.back.forEach( this.handleBack.bind(this) );
   keyUps.takeUntil( outcome.done ).forEach( this.onUpKey.bind(this) );
   keyDowns.takeUntil( outcome.done ).forEach( this.onDownKey.bind(this) );
-  alphaNumeric.takeUntil( outcome.done ).forEach( this.onKeyPress.bind(this) );
+  searchTerm.takeUntil( outcome.done ).forEach( this.onKeyPress.bind(this) );
   outcome.done.forEach( this.onSubmit.bind(this) );
 
   // Init the prompt
@@ -118,6 +155,7 @@ Prompt.prototype.render = function() {
   this.firstRender = false;
 
   this.screen.render(message);
+  this.ui.write(this.searchMode ? '\nSearch: ' + this.searchTerm : '');
 };
 
 
@@ -203,19 +241,23 @@ Prompt.prototype.onDownKey = function() {
   this.render();
 };
 
+Prompt.prototype.onSlashKey = function(e) {
+  this.render();
+};
+
 Prompt.prototype.onKeyPress = function(e) {
-  var index = findIndex.call(this, e.value);
+  var index = findIndex.call(this, this.searchTerm);
   if (index >= 0) {
     this.selected = index;
   }
   this.render();
 };
 
-function findIndex (letter) {
+function findIndex (term) {
   var item;
   for (var i=0; i < this.opt.choices.realLength; i++) {
     item = this.opt.choices.realChoices[i].name.toLowerCase();
-    if (item[0] === letter) {
+    if (item.indexOf(term) === 0) {
       return i;
     }
   }
