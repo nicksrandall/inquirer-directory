@@ -2,7 +2,7 @@
 
 Relative Directory prompt for [inquirer](https://github.com/SBoudrias/Inquirer.js)
 
-[![Build Status](https://travis-ci.org/nicksrandall/inquierer-directory.svg)](https://travis-ci.org/nicksrandall/inquierer-directory)
+[![Build Status](https://travis-ci.org/nicksrandall/inquirer-directory.svg)](https://travis-ci.org/nicksrandall/inquirer-directory)
 
 ## Installation
 
