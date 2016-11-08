@@ -82,13 +82,14 @@ describe('inquirer-directory', function() {
   });
 
   it('should not allow users to go back past basePath', function (done) {
-      prompt.run(function (answer) {
+    prompt.run()
+      .then(function (answer) {
         expect(answer).to.equal('folder1/folder1-1');
         done();
       });
-      enter();
-      enter();
-      enter();
+    enter();
+    enter();
+    enter();
   });
 
   // it('should allow users to press keys to shortcut to that value', function (done) {
