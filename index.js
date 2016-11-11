@@ -57,11 +57,10 @@ function Prompt () {
 
   // Make sure no default is set (so it won't be printed)
   this.opt.default = null;
-
   this.searchTerm = '';
-
   this.paginator = new Paginator();
 }
+
 util.inherits(Prompt, Base);
 
 /**
@@ -85,13 +84,21 @@ Prompt.prototype._run = function (cb) {
     return e.key.name === 'down' || (!self.searchMode && e.key.name === 'j');
   }).share();
 
+  var keyLefts = events.keypress.filter(function (e) {
+    return e.key.name === 'left';
+  }).share();
+
+  var keyRights = events.keypress.filter(function (e) {
+    return e.key.name === 'right';
+  }).share();
+
   var keySlash = events.keypress.filter(function (e) {
     return e.value === '/';
   }).share();
 
-  var keyMinus = events.keypress.filter(function (e) {
-    return e.value === '-';
-  }).share();
+  // var keyMinus = events.keypress.filter(function (e) {
+  //   return e.value === '-';
+  // }).share();
 
   var alphaNumeric = events.keypress.filter(function (e) {
     return e.key.name === 'backspace' || alphaNumericRegex.test(e.value);
@@ -123,11 +130,16 @@ Prompt.prototype._run = function (cb) {
   }).share();
 
   var outcome = this.handleSubmit(events.line);
-  outcome.drill.forEach(this.handleDrill.bind(this));
-  outcome.back.forEach(this.handleBack.bind(this));
+  // outcome.drill.forEach(this.handleDrill.bind(this));
+  // outcome.back.forEach(this.handleBack.bind(this));
+
   keyUps.takeUntil(outcome.done).forEach(this.onUpKey.bind(this));
   keyDowns.takeUntil(outcome.done).forEach(this.onDownKey.bind(this));
-  keyMinus.takeUntil(outcome.done).forEach(this.handleBack.bind(this));
+
+  keyLefts.takeUntil(outcome.done).forEach(this.handleBack.bind(this));
+  keyRights.takeUntil(outcome.done).forEach(this.handleDrill.bind(this));
+
+  // keyMinus.takeUntil(outcome.done).forEach(this.handleBack.bind(this));
   events.keypress.takeUntil(outcome.done).forEach(this.hideKeyPress.bind(this));
   searchTerm.takeUntil(outcome.done).forEach(this.onKeyPress.bind(this));
   outcome.done.forEach(this.onSubmit.bind(this));
@@ -145,29 +157,32 @@ Prompt.prototype._run = function (cb) {
  */
 
 Prompt.prototype.render = function () {
-  // Render question
+
   var message = this.getQuestion();
 
-  if (this.firstRender) {
+  if (this.firstRender || true) {
     message += chalk.dim('(Use arrow keys)');
   }
 
-  // Render choices or answer depending on the state
   if (this.status === 'answered') {
-    message += chalk.cyan(path.relative(this.opt.basePath, this.currentPath));
+
+    message += chalk.cyan(this.selectedValue);
+
   } else {
-    message += chalk.bold('\n Current directory: ') + this.opt.basePath + '/' + chalk.cyan(path.relative(this.opt.basePath, this.currentPath));
+
+    message += '\n\n' + chalk.bold(' Current directory: ') + chalk.black(path.join(this.currentPath, '/../'))
+      + chalk.magenta(path.basename(this.currentPath));
+
     var choicesStr = listRender(this.opt.choices, this.selected);
-    message += '\n' + this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
+    message += '\n\n\n' + this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
   }
   if (this.searchMode) {
-    message += ('\nSearch: ' + this.searchTerm);
+    message += ('\n\n => Search: ' + this.searchTerm);
   } else {
-    message += '\n(Use \'/\' key to search this directory)';
+    message += '\n\n (Use \'/\' key to search this directory)';
   }
 
   this.firstRender = false;
-
   this.screen.render(message);
 };
 
@@ -179,26 +194,32 @@ Prompt.prototype.handleSubmit = function (e) {
   var self = this;
 
   var obx = e.map(function () {
-    return self.opt.choices.getChoice(self.selected).value;
+
+    var val;
+    if (val = self.opt.choices.getChoice(self.selected).value) {
+      self.selectedValue = val;
+      return val;
+    }
   }).share();
 
   // here is a hack, but it seems to work
   var done = obx.filter(function (choice) {
-    return choice === CHOOSE_DIRECTORY || choice === self.currentPath;
+    // return choice === self.currentPath;
+    return true;
   }).take(1);
 
-  var back = obx.filter(function (choice) {
-    return choice === BACK;
-  }).takeUntil(done);
-
-  var drill = obx.filter(function (choice) {
-    return choice !== BACK && choice !== CHOOSE_DIRECTORY;
-  }).takeUntil(done);
+  // var back = obx.filter(function (choice) {
+  //   return choice === BACK;
+  // }).takeUntil(done);
+  //
+  // var drill = obx.filter(function (choice) {
+  //   return choice !== BACK && choice !== CHOOSE_DIRECTORY;
+  // }).takeUntil(done);
 
   return {
     done: done,
-    back: back,
-    drill: drill
+    // back: back,
+    // drill: drill
   };
 };
 
@@ -210,34 +231,28 @@ Prompt.prototype.handleDrill = function () {
   var choice = this.opt.choices.getChoice(this.selected);
   this.currentPath = path.isAbsolute(choice.value) ? choice.value : path.join(this.currentPath, choice.value);
 
-  console.log('current path => ', this.currentPath);
-
   if (fs.statSync(this.currentPath).isFile()) {
-    console.log('its a file!');
     this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
     this.selected = 0;
   }
   else {
-    this.depth++;
     this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
     this.selected = 0;
+    this.render();
   }
 
-  this.render();
 };
 
 /**
  * when user selects '.. back'
  */
 Prompt.prototype.handleBack = function () {
-  if (this.depth > 0) {
-    var choice = this.opt.choices.getChoice(this.selected);
-    this.depth--;
-    this.currentPath = path.dirname(this.currentPath);
-    this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
-    this.selected = 0;
-    this.render();
-  }
+  var choice = this.opt.choices.getChoice(this.selected);
+  // this.currentPath = path.dirname(this.currentPath);
+  this.currentPath = path.join(this.currentPath, '/../');
+  this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
+  this.selected = 0;
+  this.render();
 };
 
 /**
@@ -245,13 +260,10 @@ Prompt.prototype.handleBack = function () {
  */
 Prompt.prototype.onSubmit = function (value) {
   this.status = 'answered';
-
-  // Rerender prompt
   this.render();
-
   this.screen.done();
   cliCursor.show();
-  this.done(path.relative(this.opt.basePath, this.currentPath));
+  this.done(this.selectedValue);
 };
 
 /**
@@ -259,7 +271,13 @@ Prompt.prototype.onSubmit = function (value) {
  */
 Prompt.prototype.hideKeyPress = function () {
   if (!this.searchMode) {
-    this.render();
+    if (fs.statSync(this.currentPath).isFile()) {
+      this.render('file');   // not currently used
+    }
+    else {
+      this.render();
+    }
+
   }
 };
 
@@ -302,29 +320,7 @@ function findIndex (term) {
  * Helper to create new choices based on previous selection.
  */
 Prompt.prototype.createChoices = function (basePath) {
-
-  var choices = getDirectories(basePath, this.opt.includeFiles, this.opt.filterItems);
-
-  if (choices.length === 1 && fs.statSync(path.isAbsolute(choices[ 0 ]) ? choices[ 0 ] :
-      path.join(basePath, choices[ 0 ])).isFile()) {
-    // do nothing
-  }
-  else {
-
-    if (choices.length > 0) {
-      choices.push(new Separator());
-    }
-    choices.push(CHOOSE_DIRECTORY);
-
-  }
-
-  if (this.depth > 0) {
-    choices.push(new Separator());
-    choices.push(BACK);
-    choices.push(new Separator());
-  }
-
-  return choices;
+  return getDirectories(basePath, this.opt.includeFiles, this.opt.filterItems);
 };
 
 /**
@@ -354,8 +350,7 @@ function listRender (choices, pointer) {
   return output.replace(/\n$/, '');
 }
 
-
-function allOK(){
+function allOK () {
   return true;
 }
 
@@ -395,6 +390,8 @@ function getDirectories (basePath, includeFiles, userSuppliedFilterFn) {
     var isDir = includeFiles ? true : stats.isDirectory();
     var isNotDotFile = path.basename(file).indexOf('.') !== 0;
     return isDir && isNotDotFile && (userSuppliedFilterFn || allOK)(absPath);
-  })
-    .sort();
+
+  }).map(function (item) {
+    return path.join(basePath, item);
+  }).sort();
 }
