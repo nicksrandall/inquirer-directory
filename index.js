@@ -160,13 +160,13 @@ Prompt.prototype.render = function () {
 
   var message = this.getQuestion();
 
-  if (this.firstRender || true) {
+  if (this.firstRender && this.status !== 'answered') {
     message += chalk.dim('(Use arrow keys)');
   }
 
   if (this.status === 'answered') {
 
-    message += chalk.cyan(this.selectedValue);
+    message += chalk.magenta(path.join(this.currentPath,this.selectedValue));
 
   } else {
 
@@ -175,11 +175,13 @@ Prompt.prototype.render = function () {
 
     var choicesStr = listRender(this.opt.choices, this.selected);
     message += '\n\n\n' + this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
-  }
-  if (this.searchMode) {
-    message += ('\n\n => Search: ' + this.searchTerm);
-  } else {
-    message += '\n\n (Use \'/\' key to search this directory)';
+
+    if (this.searchMode) {
+      message += ('\n\n => Search: ' + this.searchTerm);
+    } else {
+      message += '\n\n (Use \'/\' key to search this directory)';
+    }
+
   }
 
   this.firstRender = false;
@@ -263,7 +265,7 @@ Prompt.prototype.onSubmit = function (value) {
   this.render();
   this.screen.done();
   cliCursor.show();
-  this.done(this.selectedValue);
+  this.done(path.join(this.currentPath, this.selectedValue));
 };
 
 /**
@@ -392,6 +394,7 @@ function getDirectories (basePath, includeFiles, userSuppliedFilterFn) {
     return isDir && isNotDotFile && (userSuppliedFilterFn || allOK)(absPath);
 
   }).map(function (item) {
-    return path.join(basePath, item);
+    // return path.join(basePath, item);
+    return item;
   }).sort();
 }
