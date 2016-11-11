@@ -51,8 +51,8 @@ inquirer.prompt([{
   name: 'from',
   message: 'Where you like to put this component?',
   basePath: './src'
-}], function(answers) {
-  //etc
+}]).then(function(answers) {
+  // (answers.from is the path chosen)
 });
 ```
 
