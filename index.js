@@ -49,7 +49,13 @@ function Prompt () {
   this.pathIndexHash = {};
 
   this.depth = 0;
-  this.currentPath = path.isAbsolute(this.opt.basePath) ? path.resolve(this.opt.basePath) : path.resolve(process.cwd(), this.opt.basePath);
+  this.currentPath = path.normalize(path.isAbsolute(this.opt.basePath) ?
+    path.resolve(this.opt.basePath) : path.resolve(process.cwd(), this.opt.basePath));
+
+  if(String(this.currentPath).endsWith(path.sep)){
+    this.currentPath = String(this.currentPath).slice(0,-1);
+  }
+
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
   this.selected = 0;
 
@@ -170,7 +176,7 @@ Prompt.prototype.render = function () {
 
   if (this.status === 'answered') {
 
-    message += chalk.magenta(path.join(this.currentPath,this.selectedValue));
+    message += chalk.magenta(path.join(this.currentPath, this.selectedValue));
 
   } else {
 
@@ -234,19 +240,24 @@ Prompt.prototype.handleSubmit = function (e) {
  */
 Prompt.prototype.handleDrill = function () {
 
+  this.pathIndexHash[ this.currentPath ] = this.selected;
 
-  this.pathIndexHash[this.currentPath] = this.selected;
+  console.log('\n\n\n\n in drill => ', util.inspect(this.pathIndexHash), '\n\n\n\n\n');
 
   var choice = this.opt.choices.getChoice(this.selected);
-  this.currentPath = path.isAbsolute(choice.value) ? choice.value : path.join(this.currentPath, choice.value);
+  this.currentPath = path.normalize(path.isAbsolute(choice.value) ? choice.value : path.join(this.currentPath, choice.value));
+
+  if (String(this.currentPath).endsWith(path.sep)) {
+    this.currentPath = String(this.currentPath).slice(0, -1);
+  }
 
   if (fs.statSync(this.currentPath).isFile()) {
     this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
-    this.selected = this.pathIndexHash[this.currentPath] || 0;
+    this.selected = this.pathIndexHash[ this.currentPath ] || 0;
   }
   else {
     this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
-    this.selected = this.pathIndexHash[this.currentPath] || 0;
+    this.selected = this.pathIndexHash[ this.currentPath ] || 0;
     this.render();
   }
 
@@ -258,10 +269,17 @@ Prompt.prototype.handleDrill = function () {
 Prompt.prototype.handleBack = function () {
   var choice = this.opt.choices.getChoice(this.selected);
   // this.currentPath = path.dirname(this.currentPath);
-  this.pathIndexHash[this.currentPath] = this.selected;
-  this.currentPath = path.join(this.currentPath, '/../');
+  this.pathIndexHash[ this.currentPath ] = this.selected;
+
+  console.log('\n\n\n\n in back => ', util.inspect(this.pathIndexHash), '\n\n\n\n\n');
+
+  this.currentPath = path.normalize(path.join(this.currentPath, '/../'));
+  if (String(this.currentPath).endsWith(path.sep)) {
+    this.currentPath = String(this.currentPath).slice(0, -1);
+  }
+
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
-  this.selected = this.pathIndexHash[this.currentPath] || 0;
+  this.selected = this.pathIndexHash[ this.currentPath ] || 0;
   this.render();
 };
 
