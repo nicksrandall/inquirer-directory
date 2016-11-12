@@ -32,6 +32,8 @@ module.exports = Prompt;
 var CHOOSE_DIRECTORY = 'choose this directory';
 var BACK = 'go back a directory';
 
+// stores what index to use for a path if you go back a directory
+
 /**
  * Constructor
  */
@@ -43,6 +45,8 @@ function Prompt () {
   if (!this.opt.basePath) {
     this.throwParamError('basePath');
   }
+
+  this.pathIndexHash = {};
 
   this.depth = 0;
   this.currentPath = path.isAbsolute(this.opt.basePath) ? path.resolve(this.opt.basePath) : path.resolve(process.cwd(), this.opt.basePath);
@@ -230,16 +234,19 @@ Prompt.prototype.handleSubmit = function (e) {
  */
 Prompt.prototype.handleDrill = function () {
 
+
+  this.pathIndexHash[this.currentPath] = this.selected;
+
   var choice = this.opt.choices.getChoice(this.selected);
   this.currentPath = path.isAbsolute(choice.value) ? choice.value : path.join(this.currentPath, choice.value);
 
   if (fs.statSync(this.currentPath).isFile()) {
     this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
-    this.selected = 0;
+    this.selected = this.pathIndexHash[this.currentPath] || 0;
   }
   else {
     this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
-    this.selected = 0;
+    this.selected = this.pathIndexHash[this.currentPath] || 0;
     this.render();
   }
 
@@ -251,9 +258,10 @@ Prompt.prototype.handleDrill = function () {
 Prompt.prototype.handleBack = function () {
   var choice = this.opt.choices.getChoice(this.selected);
   // this.currentPath = path.dirname(this.currentPath);
+  this.pathIndexHash[this.currentPath] = this.selected;
   this.currentPath = path.join(this.currentPath, '/../');
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
-  this.selected = 0;
+  this.selected = this.pathIndexHash[this.currentPath] || 0;
   this.render();
 };
 
