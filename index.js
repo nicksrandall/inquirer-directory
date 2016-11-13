@@ -49,11 +49,13 @@ function Prompt () {
   this.pathIndexHash = {};
 
   this.depth = 0;
-  this.currentPath = path.normalize(path.isAbsolute(this.opt.basePath) ?
-    path.resolve(this.opt.basePath) : path.resolve(process.cwd(), this.opt.basePath));
 
-  if(String(this.currentPath).endsWith(path.sep)){
-    this.currentPath = String(this.currentPath).slice(0,-1);
+  this.originalBaseDir = this.currentPath =
+    path.normalize(path.isAbsolute(this.opt.basePath) ?
+      path.resolve(this.opt.basePath) : path.resolve(process.cwd(), this.opt.basePath));
+
+  if (String(this.currentPath).endsWith(path.sep)) {
+    this.currentPath = String(this.currentPath).slice(0, -1);
   }
 
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
@@ -168,10 +170,14 @@ Prompt.prototype._run = function (cb) {
 
 Prompt.prototype.render = function () {
 
-  var message = this.getQuestion();
+  var message = '';
 
   if (this.firstRender && this.status !== 'answered') {
+    message += this.getQuestion();
     message += chalk.dim('(Use arrow keys)');
+  }
+  else{
+    message += '\n'
   }
 
   if (this.status === 'answered') {
@@ -242,8 +248,6 @@ Prompt.prototype.handleDrill = function () {
 
   this.pathIndexHash[ this.currentPath ] = this.selected;
 
-  console.log('\n\n\n\n in drill => ', util.inspect(this.pathIndexHash), '\n\n\n\n\n');
-
   var choice = this.opt.choices.getChoice(this.selected);
   this.currentPath = path.normalize(path.isAbsolute(choice.value) ? choice.value : path.join(this.currentPath, choice.value));
 
@@ -267,11 +271,16 @@ Prompt.prototype.handleDrill = function () {
  * when user selects '.. back'
  */
 Prompt.prototype.handleBack = function () {
+
+  if (!this.opt.allowNavigationAboveBaseDir) {
+    if (this.currentPath === this.originalBaseDir) {
+      return;
+    }
+  }
+
   var choice = this.opt.choices.getChoice(this.selected);
   // this.currentPath = path.dirname(this.currentPath);
   this.pathIndexHash[ this.currentPath ] = this.selected;
-
-  console.log('\n\n\n\n in back => ', util.inspect(this.pathIndexHash), '\n\n\n\n\n');
 
   this.currentPath = path.normalize(path.join(this.currentPath, '/../'));
   if (String(this.currentPath).endsWith(path.sep)) {
