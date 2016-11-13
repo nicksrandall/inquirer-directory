@@ -47,9 +47,6 @@ function Prompt () {
   }
 
   this.pathIndexHash = {};
-
-  this.depth = 0;
-
   this.originalBaseDir = this.currentPath =
     path.normalize(path.isAbsolute(this.opt.basePath) ?
       path.resolve(this.opt.basePath) : path.resolve(process.cwd(), this.opt.basePath));
@@ -57,6 +54,8 @@ function Prompt () {
   if (String(this.currentPath).endsWith(path.sep)) {
     this.currentPath = String(this.currentPath).slice(0, -1);
   }
+
+  this.onlyOneFile = !!this.opt.onlyOneFile;
 
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
   this.selected = 0;
@@ -163,20 +162,16 @@ Prompt.prototype._run = function (cb) {
   return this;
 };
 
-/**
- * Render the prompt to screen
- * @return {Prompt} self
- */
 
-Prompt.prototype.render = function () {
+Prompt.prototype.render = function (msg) {
 
-  var message = '';
+  var message = (msg) || '';
 
   if (this.firstRender && this.status !== 'answered') {
     message += this.getQuestion();
     message += chalk.dim('(Use arrow keys)');
   }
-  else{
+  else {
     message += '\n'
   }
 
@@ -184,7 +179,8 @@ Prompt.prototype.render = function () {
 
     message += chalk.magenta(path.join(this.currentPath, this.selectedValue));
 
-  } else {
+  }
+  else {
 
     message += '\n\n' + chalk.bold(' Current directory: ') + chalk.black(path.join(this.currentPath, '/../'))
       + chalk.magenta(path.basename(this.currentPath));
@@ -197,7 +193,6 @@ Prompt.prototype.render = function () {
     } else {
       message += '\n\n (Use \'/\' key to search this directory)';
     }
-
   }
 
   this.firstRender = false;
@@ -223,6 +218,14 @@ Prompt.prototype.handleSubmit = function (e) {
   // here is a hack, but it seems to work
   var done = obx.filter(function (choice) {
     // return choice === self.currentPath;
+
+    _interactiveDebug('choice => ', choice);
+    choice = path.isAbsolute(choice) ? choice : path.resolve(self.currentPath + path.sep + choice);
+    if (self.onlyOneFile && !fs.statSync(choice).isFile()) {
+      self.render(' In this case, you must select a file (not a directory).');
+      return false;
+    }
+
     return true;
   }).take(1);
 
@@ -292,20 +295,22 @@ Prompt.prototype.handleBack = function () {
   this.render();
 };
 
-/**
- * when user selects 'choose this folder'
- */
 Prompt.prototype.onSubmit = function (value) {
-  this.status = 'answered';
-  this.render();
-  this.screen.done();
-  cliCursor.show();
-  this.done(path.join(this.currentPath, this.selectedValue));
+
+  const potentialDoneVal = path.join(this.currentPath, this.selectedValue);
+  if (this.onlyOneFile && !fs.statSync(potentialDoneVal).isFile()) {
+    this.render(' In this case, you must select a file (not a directory).');
+  }
+  else {
+    this.status = 'answered';
+    this.render();
+    this.screen.done();
+    cliCursor.show();
+    this.done(potentialDoneVal);
+  }
+
 };
 
-/**
- * When user press a key
- */
 Prompt.prototype.hideKeyPress = function () {
   if (!this.searchMode) {
     if (fs.statSync(this.currentPath).isFile()) {
