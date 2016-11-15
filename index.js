@@ -162,7 +162,6 @@ Prompt.prototype._run = function (cb) {
   return this;
 };
 
-
 Prompt.prototype.render = function (msg) {
 
   var message = (msg) || '';
@@ -222,7 +221,7 @@ Prompt.prototype.handleSubmit = function (e) {
     _interactiveDebug('choice => ', choice);
     choice = path.isAbsolute(choice) ? choice : path.resolve(self.currentPath + path.sep + choice);
     if (self.onlyOneFile && !fs.statSync(choice).isFile()) {
-      self.render(' In this case, you must select a file (not a directory).');
+      self.render(chalk.red(' In this case, you must select a file (not a directory).'));
       return false;
     }
 
@@ -298,23 +297,19 @@ Prompt.prototype.handleBack = function () {
 Prompt.prototype.onSubmit = function (value) {
 
   const potentialDoneVal = path.join(this.currentPath, this.selectedValue);
-  if (this.onlyOneFile && !fs.statSync(potentialDoneVal).isFile()) {
-    this.render(' In this case, you must select a file (not a directory).');
-  }
-  else {
-    this.status = 'answered';
-    this.render();
-    this.screen.done();
-    cliCursor.show();
-    this.done(potentialDoneVal);
-  }
+
+  this.status = 'answered';
+  this.render();
+  this.screen.done();
+  cliCursor.show();
+  this.done(this.opt.mapValue(potentialDoneVal));
 
 };
 
 Prompt.prototype.hideKeyPress = function () {
   if (!this.searchMode) {
     if (fs.statSync(this.currentPath).isFile()) {
-      this.render('file');   // not currently used
+      this.render();   // not currently used
     }
     else {
       this.render();
