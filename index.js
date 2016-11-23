@@ -87,6 +87,7 @@ Prompt.prototype._run = function (cb) {
   var alphaNumericRegex = /\w|\.|\-/i;
   var events = observe(this.rl);
 
+
   var keyUps = events.keypress.filter(function (e) {
     return e.key.name === 'up' || (!self.searchMode && e.key.name === 'k');
   }).share();
@@ -111,9 +112,14 @@ Prompt.prototype._run = function (cb) {
   //   return e.value === '-';
   // }).share();
 
+  // var alphaNumeric = events.keypress.filter(function (e) {
+  //   return e.key.name === 'backspace' || alphaNumericRegex.test(e.value);
+  // }).share();
+
   var alphaNumeric = events.keypress.filter(function (e) {
-    return e.key.name === 'backspace' || alphaNumericRegex.test(e.value);
+    return e.value === '-' || alphaNumericRegex.test(e.value);
   }).share();
+
 
   var searchTerm = keySlash.flatMap(function (md) {
     self.searchMode = true;
@@ -122,7 +128,8 @@ Prompt.prototype._run = function (cb) {
     var end$ = new rx.Subject();
     var done$ = rx.Observable.merge(events.line, end$);
     return alphaNumeric.map(function (e) {
-      if (e.key.name === 'backspace' && self.searchTerm.length) {
+      // if (e.key.name === 'backspace' && self.searchTerm.length) {
+      if (e.value === '-' && self.searchTerm.length) {
         self.searchTerm = self.searchTerm.slice(0, -1);
       } else if (e.value) {
         self.searchTerm += e.value;
@@ -164,6 +171,11 @@ Prompt.prototype._run = function (cb) {
 
 Prompt.prototype.render = function (msg) {
 
+  if(this.backspaceHit){
+    _interactiveDebug('backspace HIT in render() inquirer directory');
+    return;
+  }
+
   var message = (msg) || '';
 
   if (this.firstRender && this.status !== 'answered') {
@@ -175,9 +187,7 @@ Prompt.prototype.render = function (msg) {
   }
 
   if (this.status === 'answered') {
-
     message += chalk.magenta(path.join(this.currentPath, this.selectedValue));
-
   }
   else {
 
@@ -203,6 +213,13 @@ Prompt.prototype.render = function (msg) {
  */
 Prompt.prototype.handleSubmit = function (e) {
 
+  // if(this.backspaceHit){
+  //   _interactiveDebug('backspace was hit in CHOOSE DIRECTORY (handleSubmit()).');
+  //   this.screen.done();
+  //   this.rl.removeAllListeners();
+  //   return;
+  // }
+
   var self = this;
 
   var obx = e.map(function () {
@@ -218,7 +235,12 @@ Prompt.prototype.handleSubmit = function (e) {
   var done = obx.filter(function (choice) {
     // return choice === self.currentPath;
 
-    _interactiveDebug('choice => ', choice);
+    if(self.backspaceHit){
+      _interactiveDebug('hit for 6 in inquirer directory.');
+      return true;
+    }
+
+    _interactiveDebug('inquirer directory choice => ', choice);
     choice = path.isAbsolute(choice) ? choice : path.resolve(self.currentPath + path.sep + choice);
     if (self.onlyOneFile && !fs.statSync(choice).isFile()) {
       self.render(chalk.red(' In this case, you must select a file (not a directory).'));
@@ -296,6 +318,14 @@ Prompt.prototype.handleBack = function () {
 
 Prompt.prototype.onSubmit = function (value) {
 
+  if(this.backspaceHit){
+    _interactiveDebug('backspace was hit in CHOOSE DIRECTORY (onSubmit()).');
+    this.rl.emit('close-this-shiz');
+    this.screen.done();
+    this.rl.removeAllListeners();
+    return;
+  }
+
   const potentialDoneVal = path.join(this.currentPath, this.selectedValue);
 
   this.status = 'answered';
@@ -305,6 +335,18 @@ Prompt.prototype.onSubmit = function (value) {
   this.done(this.opt.mapValue(potentialDoneVal));
 
 };
+
+
+Prompt.prototype.onBackspace = function () {
+  if (this.opt.onLeftKey) {
+    _interactiveDebug('left key in base is about to run');
+    this.opt.onLeftKey.bind(this)();
+  }
+  else{
+    _interactiveDebug('no left key');
+  }
+};
+
 
 Prompt.prototype.hideKeyPress = function () {
   if (!this.searchMode) {
