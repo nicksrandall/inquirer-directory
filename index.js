@@ -85,6 +85,10 @@ Prompt.prototype._run = function( cb ) {
     return e.value === '-';
   }).share();
 
+  var dotKey = events.keypress.filter(function (evt) {
+    return evt.value === '.' && !self.searchMode;
+  }).share();
+
   var alphaNumeric = events.keypress.filter(function (e) {
     return e.key.name === 'backspace' || alphaNumericRegex.test(e.value);
   }).share();
@@ -120,6 +124,7 @@ Prompt.prototype._run = function( cb ) {
   keyUps.takeUntil( outcome.done ).forEach( this.onUpKey.bind(this) );
   keyDowns.takeUntil( outcome.done ).forEach( this.onDownKey.bind(this) );
   keyMinus.takeUntil( outcome.done ).forEach( this.handleBack.bind(this) );
+  dotKey.takeUntil(outcome.done).forEach(this.onSubmit.bind(this));
   events.keypress.takeUntil( outcome.done ).forEach( this.hideKeyPress.bind(this) );
   searchTerm.takeUntil( outcome.done ).forEach( this.onKeyPress.bind(this) );
   outcome.done.forEach( this.onSubmit.bind(this) );
@@ -157,7 +162,7 @@ Prompt.prototype.render = function() {
   if (this.searchMode) {
     message += ("\nSearch: " + this.searchTerm);
   } else {
-    message += "\n(Use \"/\" key to search this directory)";
+    message += "\n(Use \"/\" key to search this directory, use \".\" key to choice this directory)";
   }
 
   this.firstRender = false;
