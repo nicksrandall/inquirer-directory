@@ -1,9 +1,8 @@
 var expect = require('chai').expect;
-var sinon = require('sinon');
-var inquirer = require('inquirer');
 var mock = require('mock-fs');
 var ReadlineStub = require('../helpers/readline');
 var Prompt = require('../../index');
+var path = require('path');
 
 describe('inquirer-directory', function() {
   var prompt;
@@ -84,7 +83,7 @@ describe('inquirer-directory', function() {
   it('should not allow users to go back past basePath', function (done) {
     prompt.run()
       .then(function (answer) {
-        expect(answer).to.equal('folder1/folder1-1');
+        expect(answer).to.equal(path.normalize('folder1/folder1-1'));
         done();
       });
     enter();

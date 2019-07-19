@@ -2,7 +2,6 @@
  * `directory` type prompt
  */
 var rx = require('rx-lite');
-var _ = require("lodash");
 var util = require("util");
 var chalk = require("chalk");
 var figures = require("figures");
