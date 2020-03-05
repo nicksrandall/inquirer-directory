@@ -60,6 +60,21 @@ inquirer.prompt([{
 
 See also [example.js](https://github.com/nicksrandall/inquierer-directory/blob/master/example.js) for a working example
 
+To select files and directories.
+```javascript
+//registering it as type file allows files to be selected.
+inquirer.registerPrompt('file', require('inquirer-directory'));
+inquirer.prompt([{
+  type: 'file',
+  name: 'from',
+  message: 'Where you like to put this component?',
+  basePath: './src'
+}]).then(function(answers) {
+  // (answers.from is the path chosen)
+});
+```
+
+
 ## License
 
 MIT
