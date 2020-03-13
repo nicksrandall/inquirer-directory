@@ -1,7 +1,7 @@
 {
-  "name": "inquirer-directory",
-  "version": "2.2.0",
-  "description": "a directory (relative to given path) selector for Inquirer.js",
+  "name": "speajus-inquirer-directory-fork",
+  "version": "2.3.1",
+  "description": "A fork of a inquirer-directory to allow file selection (relative to given path) selector for Inquirer.js",
   "main": "index.js",
   "scripts": {
     "test": "node_modules/.bin/_mocha test/spec",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nicksrandall/inquierer-directory.git"
+    "url": "git+https://github.com/jspears/inquirer-directory.git"
   },
   "keywords": [
     "Inquirer",
@@ -20,9 +20,9 @@
   "author": "Nick Randall <nicksrandall@gmail.com> (http://nickrandall.com)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nicksrandall/inquierer-directory/issues"
+    "url": "https://github.com/jspears/inquirer-directory/issues"
   },
-  "homepage": "https://github.com/nicksrandall/inquierer-directory#readme",
+  "homepage": "+https://github.com/jspears/inquirer-directory#readme",
   "dependencies": {
     "chalk": "^1.1.1",
     "cli-cursor": "^1.0.2",

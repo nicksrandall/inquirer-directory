@@ -32,14 +32,15 @@ var BACK = "go back a directory";
  */
 
 function Prompt() {
-  Base.apply( this, arguments );
+  Base.apply(this, arguments);
 
   if (!this.opt.basePath) {
     this.throwParamError("basePath");
   }
-
+  this.includeFiles = this.opt.type === 'file';
   this.depth = 0;
   this.currentPath = path.isAbsolute(this.opt.basePath) ? path.resolve(this.opt.basePath) : path.resolve(process.cwd(), this.opt.basePath);
+  this.createChoices = this.createChoices.bind(this);
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
   this.selected = 0;
 
@@ -52,7 +53,8 @@ function Prompt() {
 
   this.paginator = new Paginator();
 }
-util.inherits( Prompt, Base );
+
+util.inherits(Prompt, Base);
 
 
 /**
@@ -61,7 +63,7 @@ util.inherits( Prompt, Base );
  * @return {this}
  */
 
-Prompt.prototype._run = function( cb ) {
+Prompt.prototype._run = function (cb) {
   var self = this;
   self.searchMode = false;
   this.done = cb;
@@ -105,23 +107,23 @@ Prompt.prototype._run = function( cb ) {
       }
       return self.searchTerm;
     })
-    .takeUntil(done$)
-    .doOnCompleted(function() {
-      self.searchMode = false;
-      self.render();
-      return false;
-    });
+      .takeUntil(done$)
+      .doOnCompleted(function () {
+        self.searchMode = false;
+        self.render();
+        return false;
+      });
   }).share();
 
   var outcome = this.handleSubmit(events.line);
-  outcome.drill.forEach( this.handleDrill.bind(this) );
-  outcome.back.forEach( this.handleBack.bind(this) );
-  keyUps.takeUntil( outcome.done ).forEach( this.onUpKey.bind(this) );
-  keyDowns.takeUntil( outcome.done ).forEach( this.onDownKey.bind(this) );
-  keyMinus.takeUntil( outcome.done ).forEach( this.handleBack.bind(this) );
-  events.keypress.takeUntil( outcome.done ).forEach( this.hideKeyPress.bind(this) );
-  searchTerm.takeUntil( outcome.done ).forEach( this.onKeyPress.bind(this) );
-  outcome.done.forEach( this.onSubmit.bind(this) );
+  outcome.drill.forEach(this.handleDrill.bind(this));
+  outcome.back.forEach(this.handleBack.bind(this));
+  keyUps.takeUntil(outcome.done).forEach(this.onUpKey.bind(this));
+  keyDowns.takeUntil(outcome.done).forEach(this.onDownKey.bind(this));
+  keyMinus.takeUntil(outcome.done).forEach(this.handleBack.bind(this));
+  events.keypress.takeUntil(outcome.done).forEach(this.hideKeyPress.bind(this));
+  searchTerm.takeUntil(outcome.done).forEach(this.onKeyPress.bind(this));
+  outcome.done.forEach(this.onSubmit.bind(this));
 
   // Init the prompt
   cliCursor.hide();
@@ -136,21 +138,21 @@ Prompt.prototype._run = function( cb ) {
  * @return {Prompt} self
  */
 
-Prompt.prototype.render = function() {
+Prompt.prototype.render = function () {
   // Render question
   var message = this.getQuestion();
 
-  if ( this.firstRender ) {
-    message += chalk.dim( "(Use arrow keys)" );
+  if (this.firstRender) {
+    message += chalk.dim("(Use arrow keys)");
   }
 
 
   // Render choices or answer depending on the state
-  if ( this.status === "answered" ) {
-    message += chalk.cyan( path.relative(this.opt.basePath, this.currentPath) );
+  if (this.status === "answered") {
+    message += chalk.cyan(path.relative(this.opt.basePath, this.currentPath));
   } else {
     message += chalk.bold("\n Current directory: ") + this.opt.basePath + "/" + chalk.cyan(path.relative(this.opt.basePath, this.currentPath));
-    var choicesStr = listRender(this.opt.choices, this.selected );
+    var choicesStr = listRender(this.opt.choices, this.selected);
     message += "\n" + this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
   }
   if (this.searchMode) {
@@ -171,10 +173,13 @@ Prompt.prototype.render = function() {
 Prompt.prototype.handleSubmit = function (e) {
   var self = this;
   var obx = e.map(function () {
-    return self.opt.choices.getChoice( self.selected ).value;
+    return self.opt.choices.getChoice(self.selected).value;
   }).share();
 
   var done = obx.filter(function (choice) {
+    if (self.includeFiles && !fs.lstatSync(self.currentPath).isDirectory()){
+      return true;
+    }
     return choice === CHOOSE;
   }).take(1);
 
@@ -183,6 +188,9 @@ Prompt.prototype.handleSubmit = function (e) {
   }).takeUntil(done);
 
   var drill = obx.filter(function (choice) {
+    if (self.includeFiles && !fs.lstatSync(self.currentPath).isDirectory()){
+      return false;
+    }
     return choice !== BACK && choice !== CHOOSE;
   }).takeUntil(done);
 
@@ -197,9 +205,9 @@ Prompt.prototype.handleSubmit = function (e) {
  *  when user selects to drill into a folder (by selecting folder name)
  */
 Prompt.prototype.handleDrill = function () {
-  var choice = this.opt.choices.getChoice( this.selected );
-  this.depth++;
+  var choice = this.opt.choices.getChoice(this.selected);
   this.currentPath = path.join(this.currentPath, choice.value);
+  this.depth++;
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
   this.selected = 0;
   this.render();
@@ -210,7 +218,7 @@ Prompt.prototype.handleDrill = function () {
  */
 Prompt.prototype.handleBack = function () {
   if (this.depth > 0) {
-    var choice = this.opt.choices.getChoice( this.selected );
+    var choice = this.opt.choices.getChoice(this.selected);
     this.depth--;
     this.currentPath = path.dirname(this.currentPath);
     this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
@@ -222,7 +230,7 @@ Prompt.prototype.handleBack = function () {
 /**
  * when user selects "choose this folder"
  */
-Prompt.prototype.onSubmit = function(value) {
+Prompt.prototype.onSubmit = function (value) {
   this.status = "answered";
 
   // Rerender prompt
@@ -230,36 +238,36 @@ Prompt.prototype.onSubmit = function(value) {
 
   this.screen.done();
   cliCursor.show();
-  this.done( path.relative(this.opt.basePath, this.currentPath) );
+  this.done(path.relative(this.opt.basePath, this.currentPath));
 };
 
 
 /**
  * When user press a key
  */
-Prompt.prototype.hideKeyPress = function() {
+Prompt.prototype.hideKeyPress = function () {
   if (!this.searchMode) {
     this.render();
   }
 };
 
-Prompt.prototype.onUpKey = function() {
+Prompt.prototype.onUpKey = function () {
   var len = this.opt.choices.realLength;
   this.selected = (this.selected > 0) ? this.selected - 1 : len - 1;
   this.render();
 };
 
-Prompt.prototype.onDownKey = function() {
+Prompt.prototype.onDownKey = function () {
   var len = this.opt.choices.realLength;
   this.selected = (this.selected < len - 1) ? this.selected + 1 : 0;
   this.render();
 };
 
-Prompt.prototype.onSlashKey = function(e) {
+Prompt.prototype.onSlashKey = function (e) {
   this.render();
 };
 
-Prompt.prototype.onKeyPress = function(e) {
+Prompt.prototype.onKeyPress = function (e) {
   var index = findIndex.call(this, this.searchTerm);
   if (index >= 0) {
     this.selected = index;
@@ -267,9 +275,9 @@ Prompt.prototype.onKeyPress = function(e) {
   this.render();
 };
 
-function findIndex (term) {
+function findIndex(term) {
   var item;
-  for (var i=0; i < this.opt.choices.realLength; i++) {
+  for (var i = 0; i < this.opt.choices.realLength; i++) {
     item = this.opt.choices.realChoices[i].name.toLowerCase();
     if (item.indexOf(term) === 0) {
       return i;
@@ -282,7 +290,7 @@ function findIndex (term) {
  * Helper to create new choices based on previous selection.
  */
 Prompt.prototype.createChoices = function (basePath) {
-  var choices = getDirectories(basePath);
+  var choices = getDirectories(basePath, this.includeFiles);
   if (choices.length > 0) {
     choices.push(new Separator());
   }
@@ -300,7 +308,7 @@ Prompt.prototype.createChoices = function (basePath) {
  * @param  {Number} pointer Position of the pointer
  * @return {String}         Rendered content
  */
- function listRender(choices, pointer) {
+function listRender(choices, pointer) {
   var output = '';
   var separatorOffset = 0;
 
@@ -327,17 +335,19 @@ Prompt.prototype.createChoices = function (basePath) {
  * @param  {String} basePath the path the folder to get a list of containing folders
  * @return {Array}           array of folder names inside of basePath
  */
-function getDirectories(basePath) {
+function getDirectories(basePath, includeFile) {
+  if (!fs.lstatSync(basePath).isDirectory()){
+    return [];
+  }
   return fs
     .readdirSync(basePath)
-    .filter(function(file) {
+    .filter(function (file) {
       var stats = fs.lstatSync(path.join(basePath, file));
       if (stats.isSymbolicLink()) {
         return false;
       }
-      var isDir = stats.isDirectory();
       var isNotDotFile = path.basename(file).indexOf('.') !== 0;
-      return isDir && isNotDotFile;
+      return isNotDotFile && (includeFile || stats.isDirectory());
     })
     .sort();
 }
