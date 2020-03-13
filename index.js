@@ -177,6 +177,9 @@ Prompt.prototype.handleSubmit = function (e) {
   }).share();
 
   var done = obx.filter(function (choice) {
+    if (self.includeFiles && !fs.lstatSync(self.currentPath).isDirectory()){
+      return true;
+    }
     return choice === CHOOSE;
   }).take(1);
 
@@ -185,6 +188,9 @@ Prompt.prototype.handleSubmit = function (e) {
   }).takeUntil(done);
 
   var drill = obx.filter(function (choice) {
+    if (self.includeFiles && !fs.lstatSync(self.currentPath).isDirectory()){
+      return false;
+    }
     return choice !== BACK && choice !== CHOOSE;
   }).takeUntil(done);
 
@@ -201,11 +207,6 @@ Prompt.prototype.handleSubmit = function (e) {
 Prompt.prototype.handleDrill = function () {
   var choice = this.opt.choices.getChoice(this.selected);
   this.currentPath = path.join(this.currentPath, choice.value);
-
-  if (this.includeFiles && !fs.lstatSync(this.currentPath).isDirectory()) {
-    this.onSubmit(choice.value);
-    return
-  }
   this.depth++;
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
   this.selected = 0;
@@ -335,6 +336,9 @@ function listRender(choices, pointer) {
  * @return {Array}           array of folder names inside of basePath
  */
 function getDirectories(basePath, includeFile) {
+  if (!fs.lstatSync(basePath).isDirectory()){
+    return [];
+  }
   return fs
     .readdirSync(basePath)
     .filter(function (file) {
