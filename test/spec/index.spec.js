@@ -42,6 +42,23 @@ describe('inquirer-directory', function() {
     }).to.throw(/basePath/);
   });
 
+  it('base path can be a function', function () {
+    const rl = new ReadlineStub();
+    const prompt = new Prompt(
+      {
+        message: 'foo',
+        name: 'name',
+        basePath: function () {
+          return 'folder1';
+        },
+      },
+      rl
+    );
+    prompt.run();
+    expect(prompt.getBasePath()).to.equal('folder1');
+    expect(rl.output.__raw__).to.contain('folder1-1');
+  });
+
   it('should list only folders an not files', function () {
       prompt.run();
       expect(rl.output.__raw__).to.contain('folder1');

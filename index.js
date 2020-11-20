@@ -39,7 +39,7 @@ function Prompt() {
   }
 
   this.depth = 0;
-  this.currentPath = path.isAbsolute(this.opt.basePath) ? path.resolve(this.opt.basePath) : path.resolve(process.cwd(), this.opt.basePath);
+  this.currentPath = path.isAbsolute(this.getBasePath()) ? path.resolve(this.getBasePath()) : path.resolve(process.cwd(), this.getBasePath());
   this.opt.choices = new Choices(this.createChoices(this.currentPath), this.answers);
   this.selected = 0;
 
@@ -54,6 +54,14 @@ function Prompt() {
 }
 util.inherits( Prompt, Base );
 
+
+Prompt.prototype.getBasePath = function() {
+  if (typeof this.opt.basePath === "function") {
+    return this.opt.basePath(this.answers)
+  } else {
+    return this.opt.basePath
+  }
+}
 
 /**
  * Start the Inquiry session
@@ -147,9 +155,9 @@ Prompt.prototype.render = function() {
 
   // Render choices or answer depending on the state
   if ( this.status === "answered" ) {
-    message += chalk.cyan( path.relative(this.opt.basePath, this.currentPath) );
+    message += chalk.cyan( path.relative(this.getBasePath(), this.currentPath) );
   } else {
-    message += chalk.bold("\n Current directory: ") + this.opt.basePath + "/" + chalk.cyan(path.relative(this.opt.basePath, this.currentPath));
+    message += chalk.bold("\n Current directory: ") + this.getBasePath() + "/" + chalk.cyan(path.relative(this.getBasePath(), this.currentPath));
     var choicesStr = listRender(this.opt.choices, this.selected );
     message += "\n" + this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
   }
@@ -230,7 +238,7 @@ Prompt.prototype.onSubmit = function(value) {
 
   this.screen.done();
   cliCursor.show();
-  this.done( path.relative(this.opt.basePath, this.currentPath) );
+  this.done( path.relative(this.getBasePath(), this.currentPath) );
 };
 
 

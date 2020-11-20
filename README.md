@@ -42,6 +42,9 @@ See [inquirer](https://github.com/SBoudrias/Inquirer.js) readme for meaning of a
 
 **basePath** is the relative path from your current working directory
 
+**basePath** can be a string of a function. When specified as a function it will
+be invoked with dictionary of answers.
+
 #### Example
 
 ```javascript
